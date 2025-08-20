@@ -38,7 +38,7 @@ def fetch_news():
 
     for source, url in NEWS_FEEDS.items():
         feed = feedparser.parse(url)
-        for entry in feed.entries[:10]:  # up to 10 per source
+        for entry in feed.entries[:20]:  # up to 10 per source
             article = {
                 "title": entry.title,
                 "link": entry.link,
@@ -70,7 +70,7 @@ def fetch_videos():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 result = ydl.extract_info(topic, download=False)
                 if 'entries' in result:
-                    for video in result['entries'][:3]:  # Get first 3 results
+                    for video in result['entries'][:10]:  # Get first 3 results
                         video_info = {
                             "title": video.get('title', 'No title'),
                             "link": video.get('url', '#'),
@@ -111,4 +111,5 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 

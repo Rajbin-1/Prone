@@ -2,79 +2,76 @@ from flask import Flask, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
 import feedparser
 from datetime import datetime
-import os
 
 app = Flask(__name__)
 
-# Global variables to store news
-featured_articles = []
-feed_articles = {}
-all_videos = []
+# Global variables
+all_articles = []
+interesting_articles = []
 last_update = None
 
-# List of news feeds
+# Trusted news sources
 NEWS_FEEDS = {
-    "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    "BBC World": "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "The Kathmandu Post": "https://kathmandupost.com/rss"
+    "NYT Education": "https://rss.nytimes.com/services/xml/rss/nyt/Education.xml",
+    "NYT Science": "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
+    "Kantipur": "https://ekantipur.com/feed/",
+    "Kathmandu Post": "https://kathmandupost.com/feed/",
+    "The Himalayan Times": "https://thehimalayantimes.com/feed/"
 }
 
-def fetch_news():
-    global featured_articles, feed_articles, all_videos, last_update
-    featured_articles = []
-    feed_articles = {}
-    all_videos = []
+# Keywords to filter interesting/educational/fun content
+KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation"]
 
-    for source_name, url in NEWS_FEEDS.items():
+
+def is_interesting(article):
+    text = (article["title"] + " " + article.get("summary", "")).lower()
+    return any(kw in text for kw in KEYWORDS)
+
+
+def fetch_news():
+    global all_articles, interesting_articles, last_update
+    all_articles = []
+    interesting_articles = []
+
+    for source, url in NEWS_FEEDS.items():
         feed = feedparser.parse(url)
-        articles = []
-        for entry in feed.entries[:5]:  # limit articles per source
+        for entry in feed.entries[:10]:  # up to 10 per source
             article = {
                 "title": entry.title,
                 "link": entry.link,
                 "summary": getattr(entry, "summary", ""),
                 "pub_date_str": getattr(entry, "published", ""),
-                "source": source_name,
-                "is_video": "video" in getattr(entry, "tags", [{}])[0].get("term", "").lower()
-                if hasattr(entry, "tags") else False
+                "source": source,
             }
-            articles.append(article)
-            # Optional: pick first 3 articles as featured
-            if len(featured_articles) < 3:
-                featured_articles.append(article)
-        feed_articles[source_name] = articles
-        all_videos.extend([a for a in articles if a["is_video"]])
+            all_articles.append(article)
+
+            if is_interesting(article):
+                interesting_articles.append(article)
 
     last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"News updated at {last_update}")
 
+
 # Schedule automatic updates every 6 hours
-scheduler = BackgroundScheduler(daemon=True)
+scheduler = BackgroundScheduler()
 scheduler.add_job(func=fetch_news, trigger="interval", hours=6)
 scheduler.start()
 
 # Initial fetch
 fetch_news()
 
-@app.route("/")
+
+@app.route('/')
 def index():
-    total_articles = sum(len(v) for v in feed_articles.values())
-    error = None if total_articles > 0 else "No articles available at the moment."
-
-    last_fetch_time = datetime.now()
-
+    error = None if interesting_articles else "No interesting articles right now."
     return render_template(
         "index.html",
-        featured_articles=featured_articles,
-        feed_articles=feed_articles,
-        all_videos=all_videos,
-        total_articles=total_articles,
+        interesting_articles=interesting_articles,
+        total_articles=len(interesting_articles),
         error=error,
-        last_update=last_update,
-        last_fetch_time=last_fetch_time
+        last_update=last_update
     )
 
-# ✅ Render expects your app to bind to 0.0.0.0:$PORT
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True)

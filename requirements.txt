@@ -1,5 +1,0 @@
-Flask
-feedparser
-APScheduler
-youtubesearchpython
-gunicorn

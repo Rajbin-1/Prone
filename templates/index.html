@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News Aggregator - Latest Headlines</title>
+    <title>PRONE - Progressive News Network</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Google Fonts - Roboto -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Poppins & Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -22,8 +22,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="fas fa-newspaper me-2"></i>
-                NewsHub
+                <i class="fas fa-broadcast-tower me-2"></i>
+                PRONE
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -51,7 +51,7 @@
                 
                 <div class="d-flex align-items-center">
                     <div class="search-container me-3">
-                        <input type="text" class="search-input" placeholder="Search news..." id="searchInput">
+                        <input type="text" class="search-input" placeholder="Search news..." id="searchInput" onkeyup="filterNews()">
                         <button class="search-btn" onclick="filterNews()">
                             <i class="fas fa-search"></i>
                         </button>
@@ -69,27 +69,31 @@
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container text-center">
-            <h1 class="hero-title">Stay Informed with Global News</h1>
-            <p class="hero-subtitle">Latest headlines from trusted sources around the world</p>
+            <h1 class="hero-title">PRONE: Progressive News Network</h1>
+            <p class="hero-subtitle">Stay informed with the latest headlines from trusted sources around the globe</p>
             
             <div class="hero-stats justify-content-center">
                 <div class="stat-item">
-                    <div class="stat-number">{{ total_articles }}</div>
+                    <span class="stat-number">{{ total_articles }}</span>
                     <div class="stat-label">Total Articles</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">{{ feed_articles|length }}</div>
+                    <span class="stat-number">{{ feed_articles|length }}</span>
                     <div class="stat-label">News Sources</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">{{ all_videos|length }}</div>
+                    <span class="stat-number">{{ all_videos|length }}</span>
                     <div class="stat-label">Video News</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <div class="stat-label">Live Updates</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <main class="container my-4">
+    <main class="container my-4 content-fade-in">
         {% if error %}
         <div class="alert alert-danger text-center" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -98,6 +102,24 @@
         {% endif %}
 
         {% if total_articles > 0 %}
+        <!-- Breaking News Banner -->
+        <div class="breaking-news mb-4">
+            <div class="breaking-news-content">
+                <span class="breaking-label">BREAKING</span>
+                <span class="breaking-text">Global summit on climate change concludes with new agreements</span>
+            </div>
+        </div>
+
+        <!-- Trending Topics -->
+        <div class="trending-topics mb-4">
+            <span class="fw-bold me-2">Trending:</span>
+            <div class="trending-topic">Climate Change</div>
+            <div class="trending-topic">Technology</div>
+            <div class="trending-topic">Economy</div>
+            <div class="trending-topic">Politics</div>
+            <div class="trending-topic">Health</div>
+        </div>
+
         <!-- Filter and Category Row -->
         <div class="row filter-row align-items-center mb-4">
             <div class="col-md-6">
@@ -108,6 +130,15 @@
                         <option value="al-jazeera">Al Jazeera</option>
                         <option value="bbc-world">BBC World</option>
                         <option value="kathmandu">The Kathmandu Post</option>
+                    </select>
+                    <select class="filter-select ms-2" id="genreFilter" onchange="filterByGenre()">
+                        <option value="all">All Genres</option>
+                        <option value="politics">Politics</option>
+                        <option value="technology">Technology</option>
+                        <option value="business">Business</option>
+                        <option value="health">Health</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="sports">Sports</option>
                     </select>
                 </div>
             </div>
@@ -137,8 +168,11 @@
             </h2>
             <div class="row g-4">
                 {% for article in featured_articles %}
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-4 col-md-6 article-item" data-source="{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
                     <div class="card featured-card h-100">
+                        <div class="featured-img">
+                            <i class="fas fa-newspaper"></i>
+                        </div>
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge source-badge-{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}">
@@ -152,14 +186,19 @@
                                 <small class="text-muted">{{ article.pub_date_str }}</small>
                             </div>
                             <h5 class="card-title featured-title">
-                                <a href="{{ article.link }}" target="_blank" class="text-decoration-none">
+                                <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="text-decoration-none">
                                     {{ article.title }}
                                 </a>
                             </h5>
                             <p class="card-text text-muted">{{ article.summary }}</p>
-                            <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                Read More <i class="fas fa-external-link-alt ms-1"></i>
-                            </a>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="btn btn-outline-primary btn-sm">
+                                    Read More <i class="fas fa-external-link-alt ms-1"></i>
+                                </a>
+                                <span class="reading-time">
+                                    <i class="far fa-clock me-1"></i>5 min read
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -177,7 +216,7 @@
                 {% for source_name, articles in feed_articles.items() %}
                     {% if source_name in ['Al Jazeera', 'BBC World'] %}
                         {% for article in articles %}
-                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
                             <div class="card article-card h-100">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -192,11 +231,19 @@
                                         <small class="text-muted">{{ article.pub_date_str }}</small>
                                     </div>
                                     <h6 class="card-title">
-                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                        <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="text-decoration-none article-title">
                                             {{ article.title }}
                                         </a>
                                     </h6>
                                     <p class="card-text text-muted small">{{ article.summary }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="btn btn-outline-primary btn-sm">
+                                            Read More
+                                        </a>
+                                        <span class="reading-time">
+                                            <i class="far fa-clock me-1"></i>3 min read
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,7 +263,7 @@
                 {% for source_name, articles in feed_articles.items() %}
                     {% if source_name == 'The Kathmandu Post' %}
                         {% for article in articles %}
-                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
                             <div class="card article-card h-100">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -229,11 +276,19 @@
                                         <small class="text-muted">{{ article.pub_date_str }}</small>
                                     </div>
                                     <h6 class="card-title">
-                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                        <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="text-decoration-none article-title">
                                             {{ article.title }}
                                         </a>
                                     </h6>
                                     <p class="card-text text-muted small">{{ article.summary }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="btn btn-outline-primary btn-sm">
+                                            Read More
+                                        </a>
+                                        <span class="reading-time">
+                                            <i class="far fa-clock me-1"></i>4 min read
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -251,7 +306,7 @@
             </h2>
             <div class="row g-4">
                 {% for video in all_videos %}
-                <div class="col-lg-4 col-md-6 article-item" data-source="{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}">
+                <div class="col-lg-4 col-md-6 article-item" data-source="{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ video.genre if video.genre else 'general' }}">
                     <div class="card video-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -294,7 +349,7 @@
                 </h4>
                 <div class="row g-3">
                     {% for article in articles %}
-                    <div class="col-lg-4 col-md-6 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                    <div class="col-lg-4 col-md-6 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
                         <div class="card article-card h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -309,11 +364,19 @@
                                     <small class="text-muted">{{ article.pub_date_str }}</small>
                                 </div>
                                 <h6 class="card-title">
-                                    <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                    <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="text-decoration-none article-title">
                                         {{ article.title }}
                                     </a>
                                 </h6>
                                 <p class="card-text text-muted small">{{ article.summary }}</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|escapejs }}')" class="btn btn-outline-primary btn-sm">
+                                        Read More
+                                    </a>
+                                    <span class="reading-time">
+                                        <i class="far fa-clock me-1"></i>3 min read
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -332,15 +395,31 @@
         </div>
         {% endif %}
 
-        <div id="article-viewer" class="article-viewer d-none">
-            <div class="article-viewer-header">
-                <button class="btn btn-sm btn-secondary" onclick="hideArticleViewer()">
-                    <i class="fas fa-arrow-left"></i> Back to News
-                </button>
-                <h5 class="article-viewer-title"></h5>
-            </div>
-            <div class="article-viewer-content">
-                <iframe src="" frameborder="0" class="article-iframe"></iframe>
+        <!-- Article Viewer Modal -->
+        <div class="modal fade" id="articleModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="articleModalTitle">Article</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="articleContent">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3">Loading article content...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="originalArticleLink" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Original Article
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -348,8 +427,8 @@
     <footer>
         <div class="container text-center">
             <p class="mb-2">
-                <i class="fas fa-newspaper me-2"></i>
-                NewsHub - Your trusted source for global news
+                <i class="fas fa-broadcast-tower me-2"></i>
+                PRONE - Progressive News Network
             </p>
             <small>
                 Sources: Al Jazeera, BBC World, The Kathmandu Post | 
@@ -362,128 +441,155 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-   <script>
-    // Dark Mode Toggle Functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize dark mode if previously set
-        const savedMode = localStorage.getItem('darkMode');
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        
-        if (savedMode === 'enabled') {
-            document.body.classList.add('dark-mode');
-            darkModeToggle.checked = true;
-        }
-        
-        // Set up dark mode toggle event
-        darkModeToggle.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', null);
-            }
-        });
-
-        // Initialize the first section as active
-        showSection(null, 'highlights');
-    });
-
-    // Show/Hide Sections
-    function showSection(event, sectionId) {
-        if (event) event.preventDefault();
-        
-        // Hide all content sections
-        document.querySelectorAll('.content-section').forEach(section => {
-            section.classList.add('d-none');
-        });
-        
-        // Remove active class from all nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
-        // Show the selected section
-        document.getElementById(sectionId + '-section').classList.remove('d-none');
-        
-        // Add active class to the clicked nav link
-        if (event) {
-            event.target.classList.add('active');
+    <script>
+        // Dark Mode Toggle Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dark mode if previously set
+            const savedMode = localStorage.getItem('darkMode');
+            const darkModeToggle = document.getElementById('darkModeToggle');
             
-            // Also update the category tabs if clicked from main nav
-            const categoryTabs = document.querySelectorAll('.category-tabs .nav-link');
-            categoryTabs.forEach(tab => {
-                if (tab.textContent.trim().toLowerCase() === sectionId) {
-                    tab.classList.add('active');
+            if (savedMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.checked = true;
+            }
+            
+            // Set up dark mode toggle event
+            darkModeToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('darkMode', 'enabled');
                 } else {
-                    tab.classList.remove('active');
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('darkMode', null);
+                }
+            });
+
+            // Initialize the first section as active
+            showSection(null, 'highlights');
+            
+            // Add genre data to articles for demo purposes
+            document.querySelectorAll('.article-item').forEach(item => {
+                const genres = ['politics', 'technology', 'business', 'health', 'entertainment', 'sports'];
+                const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+                item.setAttribute('data-genre', randomGenre);
+            });
+        });
+
+        // Show/Hide Sections
+        function showSection(event, sectionId) {
+            if (event) event.preventDefault();
+            
+            // Hide all content sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('d-none');
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show the selected section
+            document.getElementById(sectionId + '-section').classList.remove('d-none');
+            
+            // Add active class to the clicked nav link
+            if (event) {
+                event.target.classList.add('active');
+                
+                // Also update the category tabs if clicked from main nav
+                const categoryTabs = document.querySelectorAll('.category-tabs .nav-link');
+                categoryTabs.forEach(tab => {
+                    if (tab.getAttribute('onclick').includes(sectionId)) {
+                        tab.classList.add('active');
+                    } else {
+                        tab.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        // Filter by Source
+        function filterBySource() {
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            const articles = document.querySelectorAll('.article-item');
+            
+            articles.forEach(article => {
+                if (sourceFilter === 'all' || article.dataset.source === sourceFilter) {
+                    article.classList.remove('d-none');
+                } else {
+                    article.classList.add('d-none');
                 }
             });
         }
-    }
 
-    // Filter by Source
-    function filterBySource() {
-        const sourceFilter = document.getElementById('sourceFilter').value;
-        const articles = document.querySelectorAll('.article-item');
-        
-        articles.forEach(article => {
-            if (sourceFilter === 'all' || article.dataset.source === sourceFilter) {
-                article.classList.remove('d-none');
-            } else {
-                article.classList.add('d-none');
-            }
-        });
-    }
-
-    // Search/Filter News
-    function filterNews() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const articles = document.querySelectorAll('.article-item, .featured-card');
-        
-        articles.forEach(article => {
-            const title = article.querySelector('.article-title, .featured-title').textContent.toLowerCase();
-            const summary = article.querySelector('.card-text').textContent.toLowerCase();
+        // Filter by Genre
+        function filterByGenre() {
+            const genreFilter = document.getElementById('genreFilter').value;
+            const articles = document.querySelectorAll('.article-item');
             
-            if (title.includes(searchTerm) || summary.includes(searchTerm)) {
-                article.classList.remove('d-none');
-            } else {
-                article.classList.add('d-none');
-            }
-        });
-    }
-
-    // Article Viewer Functions
-    function showArticleViewer(url, title) {
-        document.getElementById('article-viewer').classList.remove('d-none');
-        document.querySelector('.article-viewer-title').textContent = title;
-        document.querySelector('.article-iframe').src = url;
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-    }
-
-    function hideArticleViewer() {
-        document.getElementById('article-viewer').classList.add('d-none');
-        document.querySelector('.article-iframe').src = '';
-        document.body.style.overflow = ''; // Re-enable scrolling
-    }
-
-    // Add event listeners to article links to use the viewer
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add click event to article links
-        document.querySelectorAll('.article-title, .featured-title a').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                showArticleViewer(this.href, this.textContent);
+            articles.forEach(article => {
+                if (genreFilter === 'all' || article.dataset.genre === genreFilter) {
+                    article.classList.remove('d-none');
+                } else {
+                    article.classList.add('d-none');
+                }
             });
-        });
-        
-        // Make search work on Enter key
-        document.getElementById('searchInput').addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                filterNews();
-            }
-        });
-    });
-</script>
+        }
+
+        // Search/Filter News
+        function filterNews() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const articles = document.querySelectorAll('.article-item, .featured-card');
+            
+            articles.forEach(article => {
+                const title = article.querySelector('.article-title, .featured-title').textContent.toLowerCase();
+                const summary = article.querySelector('.card-text').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || summary.includes(searchTerm)) {
+                    article.classList.remove('d-none');
+                } else {
+                    article.classList.add('d-none');
+                }
+            });
+        }
+
+        // Open Article in Modal
+        function openArticle(url, title) {
+            const modal = new bootstrap.Modal(document.getElementById('articleModal'));
+            document.getElementById('articleModalTitle').textContent = title;
+            document.getElementById('originalArticleLink').href = url;
+            
+            // Show loading state
+            document.getElementById('articleContent').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading article content...</p>
+                </div>
+            `;
+            
+            // Show the modal
+            modal.show();
+            
+            // In a real implementation, you would fetch the article content here
+            // For demo purposes, we'll show a message about the article
+            setTimeout(() => {
+                document.getElementById('articleContent').innerHTML = `
+                    <div class="article-preview">
+                        <h4>${title}</h4>
+                        <p class="text-muted mb-4">This is a preview of the article content. In a production environment, 
+                        PRONE would fetch and display the full article content here.</p>
+                        <p>For now, please click the "View Original Article" button to read the full article on the source website.</p>
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Some news websites restrict external embedding of their content. 
+                            This is why we're showing a preview instead of the full article.
+                        </div>
+                    </div>
+                `;
+            }, 1500);
+        }
+    </script>
 </body>
 </html>

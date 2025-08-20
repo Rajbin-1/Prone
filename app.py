@@ -22,7 +22,7 @@ NEWS_FEEDS = {
 }
 
 # Keywords to filter interesting/educational/fun content
-KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation"]
+KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation","Nepal","War","health","dead","strict"]
 
 # YouTube search topics
 VIDEO_TOPICS = ["educational news", "fun science", "technology explained", "history documentary"]
@@ -111,3 +111,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+

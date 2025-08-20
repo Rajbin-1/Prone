@@ -38,8 +38,8 @@
             </ul>
             <div class="d-flex align-items-center">
                 <div class="search-container me-3">
-                    <input type="text" class="search-input" placeholder="Search news..." id="searchInput" onkeyup="filterNews()">
-                    <button class="search-btn" onclick="filterNews()"><i class="fas fa-search"></i></button>
+                    <input type="text" class="search-input" placeholder="Search news..." id="searchInput" onkeyup="applyFilters()">
+                    <button class="search-btn" onclick="applyFilters()"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="darkModeToggle">
@@ -84,17 +84,17 @@
     {% endif %}
 
     {% if total_articles > 0 %}
-    <!-- Sections -->
+    <!-- Filters -->
     <div class="row filter-row align-items-center mb-4">
         <div class="col-md-6 d-flex align-items-center">
             <span class="filter-label me-2">Filter by:</span>
-            <select class="filter-select" id="sourceFilter" onchange="filterBySource()">
+            <select class="filter-select" id="sourceFilter" onchange="applyFilters()">
                 <option value="all">All Sources</option>
                 <option value="al-jazeera">Al Jazeera</option>
                 <option value="bbc-world">BBC World</option>
                 <option value="kathmandu">The Kathmandu Post</option>
             </select>
-            <select class="filter-select ms-2" id="genreFilter" onchange="filterByGenre()">
+            <select class="filter-select ms-2" id="genreFilter" onchange="applyFilters()">
                 <option value="all">All Genres</option>
                 <option value="politics">Politics</option>
                 <option value="technology">Technology</option>
@@ -114,22 +114,29 @@
         </div>
     </div>
 
-    <!-- Highlights -->
-    <section id="highlights-section" class="content-section">
-        <h2 class="section-title"><i class="fas fa-star text-warning me-2"></i>Top Stories</h2>
+    <!-- Article Sections -->
+    {% for section, articles in {'highlights': featured_articles, 'world': world_articles, 'nepal': nepal_articles, 'videos': all_videos}.items() %}
+    <section id="{{ section }}-section" class="content-section {% if section != 'highlights' %}d-none{% endif %}">
+        <h2 class="section-title">
+            {% if section=='highlights' %}<i class="fas fa-star text-warning me-2"></i>Top Stories{% endif %}
+            {% if section=='world' %}<i class="fas fa-globe text-primary me-2"></i>World News{% endif %}
+            {% if section=='nepal' %}<i class="fas fa-mountain text-success me-2"></i>Nepal News{% endif %}
+            {% if section=='videos' %}<i class="fas fa-play-circle text-danger me-2"></i>Video News{% endif %}
+        </h2>
         <div class="row g-4">
-            {% for article in featured_articles %}
-            <div class="col-lg-4 col-md-6 article-item" data-source="{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
-                <div class="card featured-card h-100">
-                    <div class="featured-img"><i class="fas fa-newspaper"></i></div>
+            {% for article in articles %}
+            <div class="col-lg-4 col-md-6 article-item"
+                 data-source="{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}"
+                 data-genre="{{ article.genre if article.genre else 'general' }}">
+                <div class="card h-100 {% if section=='highlights' %}featured-card{% elif section=='videos' %}video-card{% else %}article-card{% endif %}">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge source-badge-{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}">{{ article.source }}</span>
                             {% if article.is_video %}<span class="badge bg-danger ms-2"><i class="fas fa-play me-1"></i>Video</span>{% endif %}
                             <small class="text-muted">{{ article.pub_date_str }}</small>
                         </div>
-                        <h5 class="card-title featured-title">
-                            <a href="javascript:void(0)" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})" class="text-decoration-none">{{ article.title }}</a>
+                        <h5 class="card-title">
+                            <a href="javascript:void(0)" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})" class="text-decoration-none article-title">{{ article.title }}</a>
                         </h5>
                         <p class="card-text text-muted">{{ article.summary }}</p>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -144,89 +151,7 @@
             {% endfor %}
         </div>
     </section>
-
-    <!-- World News -->
-    <section id="world-section" class="content-section d-none">
-        <h2 class="section-title"><i class="fas fa-globe text-primary me-2"></i>World News</h2>
-        <div class="row g-4">
-            {% for source_name, articles in feed_articles.items() %}
-                {% if source_name in ['Al Jazeera', 'BBC World'] %}
-                    {% for article in articles %}
-                    <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
-                        <div class="card article-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge source-badge-{{ source_name|lower|replace(' ', '-') }}">{{ article.source }}</span>
-                                    {% if article.is_video %}<span class="badge bg-danger ms-2"><i class="fas fa-play me-1"></i>Video</span>{% endif %}
-                                    <small class="text-muted">{{ article.pub_date_str }}</small>
-                                </div>
-                                <h6 class="card-title"><a href="javascript:void(0)" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})" class="text-decoration-none article-title">{{ article.title }}</a></h6>
-                                <p class="card-text text-muted small">{{ article.summary }}</p>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})">Read More</button>
-                                    <span class="reading-time"><i class="far fa-clock me-1"></i>3 min read</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% endif %}
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- Nepal News -->
-    <section id="nepal-section" class="content-section d-none">
-        <h2 class="section-title"><i class="fas fa-mountain text-success me-2"></i>Nepal News</h2>
-        <div class="row g-4">
-            {% for source_name, articles in feed_articles.items() %}
-                {% if source_name == 'The Kathmandu Post' %}
-                    {% for article in articles %}
-                    <div class="col-lg-6 col-md-12 article-item" data-source="kathmandu" data-genre="{{ article.genre if article.genre else 'general' }}">
-                        <div class="card article-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge source-badge-kathmandu">{{ article.source }}</span>
-                                    {% if article.is_video %}<span class="badge bg-danger ms-2"><i class="fas fa-play me-1"></i>Video</span>{% endif %}
-                                    <small class="text-muted">{{ article.pub_date_str }}</small>
-                                </div>
-                                <h6 class="card-title"><a href="javascript:void(0)" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})" class="text-decoration-none article-title">{{ article.title }}</a></h6>
-                                <p class="card-text text-muted small">{{ article.summary }}</p>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="openArticle('{{ article.link }}', {{ article.title|tojson }})">Read More</button>
-                                    <span class="reading-time"><i class="far fa-clock me-1"></i>4 min read</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% endif %}
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- Videos -->
-    <section id="videos-section" class="content-section d-none">
-        <h2 class="section-title"><i class="fas fa-play-circle text-danger me-2"></i>Video News</h2>
-        <div class="row g-4">
-            {% for video in all_videos %}
-            <div class="col-lg-4 col-md-6 article-item" data-source="{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ video.genre if video.genre else 'general' }}">
-                <div class="card video-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge source-badge-{{ video.source|lower|replace(' ', '-') }}">{{ video.source }}</span>
-                            <span class="badge bg-danger"><i class="fas fa-play me-1"></i>Video</span>
-                        </div>
-                        <small class="text-muted d-block mb-2">{{ video.pub_date_str }}</small>
-                        <h6 class="card-title"><a href="{{ video.link }}" target="_blank" class="text-decoration-none article-title">{{ video.title }}</a></h6>
-                        <p class="card-text text-muted small mb-3">{{ video.summary }}</p>
-                        <a href="{{ video.link }}" target="_blank" class="btn btn-danger btn-sm"><i class="fas fa-play me-1"></i>Watch Video</a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
+    {% endfor %}
 
     {% else %}
     <div class="text-center py-5">
@@ -236,7 +161,7 @@
     </div>
     {% endif %}
 
-    <!-- Article Viewer Modal -->
+    <!-- Article Modal -->
     <div class="modal fade" id="articleModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -274,21 +199,26 @@
 
 <script>
 // Dark Mode
-document.addEventListener('DOMContentLoaded', function() {
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if(localStorage.getItem('darkMode') === 'enabled'){
+document.addEventListener('DOMContentLoaded', () => {
+    const darkToggle = document.getElementById('darkModeToggle');
+    if(localStorage.getItem('darkMode')==='enabled'){
         document.body.classList.add('dark-mode');
-        darkModeToggle.checked = true;
+        darkToggle.checked = true;
     }
-    darkModeToggle.addEventListener('change', function(){
-        if(this.checked){ document.body.classList.add('dark-mode'); localStorage.setItem('darkMode','enabled'); }
-        else{ document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode',null); }
+    darkToggle.addEventListener('change', ()=>{
+        if(darkToggle.checked){ 
+            document.body.classList.add('dark-mode'); 
+            localStorage.setItem('darkMode','enabled'); 
+        } else { 
+            document.body.classList.remove('dark-mode'); 
+            localStorage.setItem('darkMode',null); 
+        }
     });
 
     // Show first section
     showSection(null,'highlights');
 
-    // Add random genre demo for all articles
+    // Add random genre if missing
     document.querySelectorAll('.article-item').forEach(item=>{
         const genres=['politics','technology','business','health','entertainment','sports'];
         if(!item.dataset.genre || item.dataset.genre==='general'){
@@ -310,57 +240,32 @@ function showSection(event, sectionId){
             if(tab.getAttribute('onclick').includes(sectionId)) tab.classList.add('active');
         });
     }
-    // Scroll to top of section
-    const section = document.getElementById(sectionId+'-section');
-    section.scrollIntoView({behavior:'smooth'});
+    document.getElementById(sectionId+'-section').scrollIntoView({behavior:'smooth'});
 }
 
-// Filter by Source
-function filterBySource() {
-    const val = document.getElementById('sourceFilter').value;
-    document.querySelectorAll('.article-item').forEach(item => {
-        if (val === 'all' || item.dataset.source === val) {
-            item.style.display = '';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-    filterByGenre(); // Apply genre filter on top
-}
-
-// Filter by Genre
-function filterByGenre() {
+// Combined Filter: Source + Genre + Search
+function applyFilters(){
+    const sourceVal = document.getElementById('sourceFilter').value;
     const genreVal = document.getElementById('genreFilter').value;
-    document.querySelectorAll('.article-item').forEach(item => {
-        const sourceVisible = item.style.display !== 'none';
-        if (sourceVisible) {
-            if (genreVal === 'all' || item.dataset.genre === genreVal) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        }
-    });
-}
-
-// Combined Search Filter
-function filterNews() {
     const query = document.getElementById('searchInput').value.toLowerCase();
-    document.querySelectorAll('.article-item').forEach(item => {
+
+    document.querySelectorAll('.article-item').forEach(item=>{
+        const matchesSource = (sourceVal==='all') || (item.dataset.source===sourceVal);
+        const matchesGenre = (genreVal==='all') || (item.dataset.genre===genreVal);
         const title = item.querySelector('.article-title')?.textContent.toLowerCase() || '';
         const summary = item.querySelector('.card-text')?.textContent.toLowerCase() || '';
-        if (title.includes(query) || summary.includes(query)) {
+        const matchesSearch = title.includes(query) || summary.includes(query);
+
+        if(matchesSource && matchesGenre && matchesSearch){
             item.style.display = '';
         } else {
             item.style.display = 'none';
         }
     });
-    filterBySource();
-    filterByGenre();
 }
 
-// Open Article in Modal
-function openArticle(link, title) {
+// Open Article Modal
+function openArticle(link, title){
     const modalTitle = document.getElementById('articleModalTitle');
     const modalContent = document.getElementById('articleContent');
     const originalLink = document.getElementById('originalArticleLink');
@@ -379,13 +284,11 @@ function openArticle(link, title) {
     const articleModal = new bootstrap.Modal(document.getElementById('articleModal'));
     articleModal.show();
 
-    // Fetch article content via CORS proxy or server route
     fetch(`/fetch_article?url=${encodeURIComponent(link)}`)
-        .then(res => res.text())
-        .then(html => { modalContent.innerHTML = html; })
-        .catch(err => { modalContent.innerHTML = `<p class="text-danger">Failed to load content.</p>`; });
+        .then(res=>res.text())
+        .then(html=>{ modalContent.innerHTML = html; })
+        .catch(err=>{ modalContent.innerHTML='<p class="text-danger">Failed to load content.</p>'; });
 }
 </script>
 </body>
 </html>
-

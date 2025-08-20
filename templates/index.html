@@ -70,24 +70,24 @@
     <section class="hero-section" id="heroSection">
         <div class="container text-center">
             <h1 class="hero-title">PRONE: Progressive News Network</h1>
-            <p class="hero-subtitle">Stay informed with the latest headlines from trusted sources around the globe</p>
+            <p class="hero-subtitle">Stay informed with the latest educational and interesting content from trusted sources</p>
             
             <div class="hero-stats justify-content-center">
                 <div class="stat-item">
-                    <span class="stat-number">{{ total_articles }}</span>
-                    <div class="stat-label">Total Articles</div>
+                    <span class="stat-number">{{ interesting_articles|length }}</span>
+                    <div class="stat-label">Interesting Articles</div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-number">{{ feed_articles|length }}</span>
+                    <span class="stat-number">{{ NEWS_FEEDS|length }}</span>
                     <div class="stat-label">News Sources</div>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number">{{ all_videos|length }}</span>
-                    <div class="stat-label">Video News</div>
+                    <div class="stat-label">Videos</div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-number">24/7</span>
-                    <div class="stat-label">Live Updates</div>
+                    <span class="stat-number">6h</span>
+                    <div class="stat-label">Update Interval</div>
                 </div>
             </div>
         </div>
@@ -101,23 +101,21 @@
         </div>
         {% endif %}
 
-        {% if total_articles > 0 %}
+        {% if interesting_articles|length > 0 %}
         <!-- Breaking News Banner - Only shown on highlights page -->
         <div class="breaking-news mb-4" id="breakingNews">
             <div class="breaking-news-content">
-                <span class="breaking-label">BREAKING</span>
-                <span class="breaking-text">Global summit on climate change concludes with new agreements</span>
+                <span class="breaking-label">TRENDING</span>
+                <span class="breaking-text">Latest educational content from trusted sources</span>
             </div>
         </div>
 
         <!-- Trending Topics - Only shown on highlights page -->
         <div class="trending-topics mb-4" id="trendingTopics">
             <span class="fw-bold me-2">Trending:</span>
-            <div class="trending-topic">Climate Change</div>
-            <div class="trending-topic">Technology</div>
-            <div class="trending-topic">Economy</div>
-            <div class="trending-topic">Politics</div>
-            <div class="trending-topic">Health</div>
+            {% for keyword in KEYWORDS %}
+            <div class="trending-topic">{{ keyword|capitalize }}</div>
+            {% endfor %}
         </div>
 
         <!-- Filter and Category Row -->
@@ -127,18 +125,15 @@
                     <span class="filter-label">Filter by:</span>
                     <select class="filter-select" id="sourceFilter" onchange="filterBySource()">
                         <option value="all">All Sources</option>
-                        <option value="al-jazeera">Al Jazeera</option>
-                        <option value="bbc-world">BBC World</option>
-                        <option value="kathmandu">The Kathmandu Post</option>
+                        {% for source in NEWS_FEEDS.keys() %}
+                        <option value="{{ source|lower|replace(' ', '-') }}">{{ source }}</option>
+                        {% endfor %}
                     </select>
-                    <select class="filter-select ms-2" id="genreFilter" onchange="filterByGenre()">
-                        <option value="all">All Genres</option>
-                        <option value="politics">Politics</option>
-                        <option value="technology">Technology</option>
-                        <option value="business">Business</option>
-                        <option value="health">Health</option>
-                        <option value="entertainment">Entertainment</option>
-                        <option value="sports">Sports</option>
+                    <select class="filter-select ms-2" id="keywordFilter" onchange="filterByKeyword()">
+                        <option value="all">All Keywords</option>
+                        {% for keyword in KEYWORDS %}
+                        <option value="{{ keyword }}">{{ keyword|capitalize }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -164,33 +159,28 @@
         <section id="highlights-section" class="content-section">
             <h2 class="section-title">
                 <i class="fas fa-star text-warning me-2"></i>
-                Top Stories
+                Top Educational Content
             </h2>
             <div class="row g-4">
-                {% for article in featured_articles %}
-                <div class="col-lg-4 col-md-6 article-item" data-source="{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
+                {% for article in interesting_articles[:6] %}
+                <div class="col-lg-4 col-md-6 article-item" data-source="{{ article.source|lower|replace(' ', '-') }}" data-keywords="{{ KEYWORDS|join(',') }}">
                     <div class="card featured-card h-100">
                         <div class="featured-img">
                             <i class="fas fa-newspaper"></i>
                         </div>
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge source-badge-{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}">
+                                <span class="badge source-badge-{{ article.source|lower|replace(' ', '-') }}">
                                     {{ article.source }}
                                 </span>
-                                {% if article.is_video %}
-                                    <span class="badge bg-danger ms-2">
-                                        <i class="fas fa-play me-1"></i>Video
-                                    </span>
-                                {% endif %}
                                 <small class="text-muted">{{ article.pub_date_str }}</small>
                             </div>
                             <h5 class="card-title featured-title">
-                                <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|tojson }}')" class="text-decoration-none">
+                                <a href="#" onclick="openArticle('{{ article.link }}', '{{ article.title|replace("'", "\\'") }}')" class="text-decoration-none">
                                     {{ article.title }}
                                 </a>
                             </h5>
-                            <p class="card-text text-muted">{{ article.summary }}</p>
+                            <p class="card-text text-muted">{{ article.summary[:150] }}...</p>
                             <div class="d-flex justify-content-between align-items-center mt-3">
                                 <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
                                     Read More <i class="fas fa-external-link-alt ms-1"></i>
@@ -213,41 +203,34 @@
                 World News
             </h2>
             <div class="row g-4">
-                {% for source_name, articles in feed_articles.items() %}
-                    {% if source_name in ['Al Jazeera', 'BBC World'] %}
-                        {% for article in articles %}
-                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
-                            <div class="card article-card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <span class="badge source-badge-{{ source_name|lower|replace(' ', '-') }}">
-                                            {{ article.source }}
-                                        </span>
-                                        {% if article.is_video %}
-                                            <span class="badge bg-danger ms-2">
-                                                <i class="fas fa-play me-1"></i>Video
-                                            </span>
-                                        {% endif %}
-                                        <small class="text-muted">{{ article.pub_date_str }}</small>
-                                    </div>
-                                    <h6 class="card-title">
-                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
-                                            {{ article.title }}
-                                        </a>
-                                    </h6>
-                                    <p class="card-text text-muted small">{{ article.summary }}</p>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                            Read More
-                                        </a>
-                                        <span class="reading-time">
-                                            <i class="far fa-clock me-1"></i>3 min read
-                                        </span>
-                                    </div>
+                {% for article in interesting_articles %}
+                    {% if article.source in ['NYT Education', 'NYT Science'] %}
+                    <div class="col-lg-6 col-md-12 article-item" data-source="{{ article.source|lower|replace(' ', '-') }}" data-keywords="{{ KEYWORDS|join(',') }}">
+                        <div class="card article-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge source-badge-{{ article.source|lower|replace(' ', '-') }}">
+                                        {{ article.source }}
+                                    </span>
+                                    <small class="text-muted">{{ article.pub_date_str }}</small>
+                                </div>
+                                <h6 class="card-title">
+                                    <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                        {{ article.title }}
+                                    </a>
+                                </h6>
+                                <p class="card-text text-muted small">{{ article.summary[:120] }}...</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        Read More
+                                    </a>
+                                    <span class="reading-time">
+                                        <i class="far fa-clock me-1"></i>3 min read
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
+                    </div>
                     {% endif %}
                 {% endfor %}
             </div>
@@ -260,39 +243,32 @@
                 Nepal News
             </h2>
             <div class="row g-4">
-                {% for source_name, articles in feed_articles.items() %}
-                    {% if source_name == 'The Kathmandu Post' %}
-                        {% for article in articles %}
-                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
-                            <div class="card article-card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <span class="badge source-badge-kathmandu">{{ article.source }}</span>
-                                        {% if article.is_video %}
-                                            <span class="badge bg-danger ms-2">
-                                                <i class="fas fa-play me-1"></i>Video
-                                            </span>
-                                        {% endif %}
-                                        <small class="text-muted">{{ article.pub_date_str }}</small>
-                                    </div>
-                                    <h6 class="card-title">
-                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
-                                            {{ article.title }}
-                                        </a>
-                                    </h6>
-                                    <p class="card-text text-muted small">{{ article.summary }}</p>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                            Read More
-                                        </a>
-                                        <span class="reading-time">
-                                            <i class="far fa-clock me-1"></i>4 min read
-                                        </span>
-                                    </div>
+                {% for article in interesting_articles %}
+                    {% if article.source in ['Kantipur', 'Kathmandu Post', 'The Himalayan Times'] %}
+                    <div class="col-lg-6 col-md-12 article-item" data-source="{{ article.source|lower|replace(' ', '-') }}" data-keywords="{{ KEYWORDS|join(',') }}">
+                        <div class="card article-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge source-badge-{{ article.source|lower|replace(' ', '-') }}">{{ article.source }}</span>
+                                    <small class="text-muted">{{ article.pub_date_str }}</small>
+                                </div>
+                                <h6 class="card-title">
+                                    <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                        {{ article.title }}
+                                    </a>
+                                </h6>
+                                <p class="card-text text-muted small">{{ article.summary[:120] }}...</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        Read More
+                                    </a>
+                                    <span class="reading-time">
+                                        <i class="far fa-clock me-1"></i>4 min read
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
+                    </div>
                     {% endif %}
                 {% endfor %}
             </div>
@@ -302,20 +278,18 @@
         <section id="videos-section" class="content-section d-none">
             <h2 class="section-title">
                 <i class="fas fa-play-circle text-danger me-2"></i>
-                Video News
+                Educational Videos
             </h2>
             <div class="row g-4">
                 {% for video in all_videos %}
-                <div class="col-lg-4 col-md-6 article-item" data-source="{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ video.genre if video.genre else 'general' }}">
+                <div class="col-lg-4 col-md-6 article-item" data-source="youtube" data-keywords="{{ VIDEO_TOPICS|join(',') }}">
                     <div class="card video-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge source-badge-{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}">
-                                    {{ video.source }}
-                                </span>
                                 <span class="badge bg-danger">
-                                    <i class="fas fa-play me-1"></i>Video
+                                    <i class="fab fa-youtube me-1"></i>YouTube
                                 </span>
+                                <span class="badge bg-info">{{ video.channel }}</span>
                             </div>
                             <small class="text-muted d-block mb-2">{{ video.pub_date_str }}</small>
                             <h6 class="card-title">
@@ -323,7 +297,6 @@
                                     {{ video.title }}
                                 </a>
                             </h6>
-                            <p class="card-text text-muted small mb-3">{{ video.summary }}</p>
                             <a href="{{ video.link }}" target="_blank" class="btn btn-danger btn-sm">
                                 <i class="fas fa-play me-1"></i>Watch Video
                             </a>
@@ -340,27 +313,25 @@
                 <i class="fas fa-rss text-info me-2"></i>
                 News by Source
             </h2>
-            {% for source_name, articles in feed_articles.items() %}
+            {% for source in NEWS_FEEDS.keys() %}
             <div class="source-section mb-5">
                 <h4 class="source-title">
                     <i class="fas fa-rss me-2"></i>
-                    {{ source_name }}
-                    <span class="badge bg-secondary ms-2">{{ articles|length }}</span>
+                    {{ source }}
+                    <span class="badge bg-secondary ms-2">
+                        {{ interesting_articles|selectattr('source', 'equalto', source)|list|length }}
+                    </span>
                 </h4>
                 <div class="row g-3">
-                    {% for article in articles %}
-                    <div class="col-lg-4 col-md-6 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}" data-genre="{{ article.genre if article.genre else 'general' }}">
+                    {% for article in interesting_articles %}
+                    {% if article.source == source %}
+                    <div class="col-lg-4 col-md-6 article-item" data-source="{{ source|lower|replace(' ', '-') }}" data-keywords="{{ KEYWORDS|join(',') }}">
                         <div class="card article-card h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge source-badge-{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                                    <span class="badge source-badge-{{ source|lower|replace(' ', '-') }}">
                                         {{ article.source }}
                                     </span>
-                                    {% if article.is_video %}
-                                        <span class="badge bg-danger ms-2">
-                                            <i class="fas fa-play me-1"></i>Video
-                                        </span>
-                                    {% endif %}
                                     <small class="text-muted">{{ article.pub_date_str }}</small>
                                 </div>
                                 <h6 class="card-title">
@@ -368,7 +339,7 @@
                                         {{ article.title }}
                                     </a>
                                 </h6>
-                                <p class="card-text text-muted small">{{ article.summary }}</p>
+                                <p class="card-text text-muted small">{{ article.summary[:120] }}...</p>
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
                                         Read More
@@ -380,6 +351,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -431,10 +403,12 @@
                 PRONE - Progressive News Network
             </p>
             <small>
-                Sources: Al Jazeera, BBC World, The Kathmandu Post | 
-                Last updated: {{ last_update }}
+                Sources: 
+                {% for source in NEWS_FEEDS.keys() %}
+                    {{ source }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+                | Last updated: {{ last_update }}
             </small>
-            <small class="d-block mt-2">Page fetched: {{ last_fetch_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
         </div>
     </footer>
 
@@ -467,11 +441,11 @@
             // Initialize the first section as active
             showSection(null, 'highlights');
             
-            // Add genre data to articles for demo purposes
+            // Add keyword data to articles for filtering
             document.querySelectorAll('.article-item').forEach(item => {
-                const genres = ['politics', 'technology', 'business', 'health', 'entertainment', 'sports'];
-                const randomGenre = genres[Math.floor(Math.random() * genres.length)];
-                item.setAttribute('data-genre', randomGenre);
+                const keywords = item.dataset.keywords.split(',');
+                const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+                item.setAttribute('data-keyword', randomKeyword);
             });
         });
 
@@ -536,13 +510,13 @@
             });
         }
 
-        // Filter by Genre
-        function filterByGenre() {
-            const genreFilter = document.getElementById('genreFilter').value;
+        // Filter by Keyword
+        function filterByKeyword() {
+            const keywordFilter = document.getElementById('keywordFilter').value;
             const articles = document.querySelectorAll('.article-item');
             
             articles.forEach(article => {
-                if (genreFilter === 'all' || article.dataset.genre === genreFilter) {
+                if (keywordFilter === 'all' || article.dataset.keyword === keywordFilter) {
                     article.classList.remove('d-none');
                 } else {
                     article.classList.add('d-none');

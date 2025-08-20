@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Aggregator - Latest Headlines</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts - Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-newspaper me-2"></i>
+                NewsHub
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection(event, 'highlights')">Highlights</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'world')">World</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'nepal')">Nepal</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'videos')">Videos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'sources')">Sources</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    <div class="search-container me-3">
+                        <input type="text" class="search-input" placeholder="Search news..." id="searchInput">
+                        <button class="search-btn" onclick="filterNews()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                        <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="hero-title">Stay Informed with Global News</h1>
+            <p class="hero-subtitle">Latest headlines from trusted sources around the world</p>
+            
+            <div class="hero-stats justify-content-center">
+                <div class="stat-item">
+                    <div class="stat-number">{{ total_articles }}</div>
+                    <div class="stat-label">Total Articles</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ feed_articles|length }}</div>
+                    <div class="stat-label">News Sources</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ all_videos|length }}</div>
+                    <div class="stat-label">Video News</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container my-4">
+        {% if error %}
+        <div class="alert alert-danger text-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if total_articles > 0 %}
+        <!-- Filter and Category Row -->
+        <div class="row filter-row align-items-center mb-4">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    <span class="filter-label">Filter by:</span>
+                    <select class="filter-select" id="sourceFilter" onchange="filterBySource()">
+                        <option value="all">All Sources</option>
+                        <option value="al-jazeera">Al Jazeera</option>
+                        <option value="bbc-world">BBC World</option>
+                        <option value="kathmandu">The Kathmandu Post</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <ul class="nav category-tabs justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection(event, 'highlights')">Highlights</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'world')">World</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'nepal')">Nepal</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection(event, 'videos')">Videos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Highlights Section -->
+        <section id="highlights-section" class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-star text-warning me-2"></i>
+                Top Stories
+            </h2>
+            <div class="row g-4">
+                {% for article in featured_articles %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card featured-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge source-badge-{{ article.source|lower|replace(' ', '-')|replace('the-', '') }}">
+                                    {{ article.source }}
+                                </span>
+                                {% if article.is_video %}
+                                    <span class="badge bg-danger ms-2">
+                                        <i class="fas fa-play me-1"></i>Video
+                                    </span>
+                                {% endif %}
+                                <small class="text-muted">{{ article.pub_date_str }}</small>
+                            </div>
+                            <h5 class="card-title featured-title">
+                                <a href="{{ article.link }}" target="_blank" class="text-decoration-none">
+                                    {{ article.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted">{{ article.summary }}</p>
+                            <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                Read More <i class="fas fa-external-link-alt ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- World News Section -->
+        <section id="world-section" class="content-section d-none">
+            <h2 class="section-title">
+                <i class="fas fa-globe text-primary me-2"></i>
+                World News
+            </h2>
+            <div class="row g-4">
+                {% for source_name, articles in feed_articles.items() %}
+                    {% if source_name in ['Al Jazeera', 'BBC World'] %}
+                        {% for article in articles %}
+                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                            <div class="card article-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge source-badge-{{ source_name|lower|replace(' ', '-') }}">
+                                            {{ article.source }}
+                                        </span>
+                                        {% if article.is_video %}
+                                            <span class="badge bg-danger ms-2">
+                                                <i class="fas fa-play me-1"></i>Video
+                                            </span>
+                                        {% endif %}
+                                        <small class="text-muted">{{ article.pub_date_str }}</small>
+                                    </div>
+                                    <h6 class="card-title">
+                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                            {{ article.title }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text text-muted small">{{ article.summary }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Nepal News Section -->
+        <section id="nepal-section" class="content-section d-none">
+            <h2 class="section-title">
+                <i class="fas fa-mountain text-success me-2"></i>
+                Nepal News
+            </h2>
+            <div class="row g-4">
+                {% for source_name, articles in feed_articles.items() %}
+                    {% if source_name == 'The Kathmandu Post' %}
+                        {% for article in articles %}
+                        <div class="col-lg-6 col-md-12 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                            <div class="card article-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge source-badge-kathmandu">{{ article.source }}</span>
+                                        {% if article.is_video %}
+                                            <span class="badge bg-danger ms-2">
+                                                <i class="fas fa-play me-1"></i>Video
+                                            </span>
+                                        {% endif %}
+                                        <small class="text-muted">{{ article.pub_date_str }}</small>
+                                    </div>
+                                    <h6 class="card-title">
+                                        <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                            {{ article.title }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text text-muted small">{{ article.summary }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Videos Section -->
+        <section id="videos-section" class="content-section d-none">
+            <h2 class="section-title">
+                <i class="fas fa-play-circle text-danger me-2"></i>
+                Video News
+            </h2>
+            <div class="row g-4">
+                {% for video in all_videos %}
+                <div class="col-lg-4 col-md-6 article-item" data-source="{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}">
+                    <div class="card video-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge source-badge-{{ video.source|lower|replace(' ', '-')|replace('the-', '') }}">
+                                    {{ video.source }}
+                                </span>
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-play me-1"></i>Video
+                                </span>
+                            </div>
+                            <small class="text-muted d-block mb-2">{{ video.pub_date_str }}</small>
+                            <h6 class="card-title">
+                                <a href="{{ video.link }}" target="_blank" class="text-decoration-none article-title">
+                                    {{ video.title }}
+                                </a>
+                            </h6>
+                            <p class="card-text text-muted small mb-3">{{ video.summary }}</p>
+                            <a href="{{ video.link }}" target="_blank" class="btn btn-danger btn-sm">
+                                <i class="fas fa-play me-1"></i>Watch Video
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Sources Section -->
+        <section id="sources-section" class="content-section d-none">
+            <h2 class="section-title">
+                <i class="fas fa-rss text-info me-2"></i>
+                News by Source
+            </h2>
+            {% for source_name, articles in feed_articles.items() %}
+            <div class="source-section mb-5">
+                <h4 class="source-title">
+                    <i class="fas fa-rss me-2"></i>
+                    {{ source_name }}
+                    <span class="badge bg-secondary ms-2">{{ articles|length }}</span>
+                </h4>
+                <div class="row g-3">
+                    {% for article in articles %}
+                    <div class="col-lg-4 col-md-6 article-item" data-source="{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                        <div class="card article-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge source-badge-{{ source_name|lower|replace(' ', '-')|replace('the-', '') }}">
+                                        {{ article.source }}
+                                    </span>
+                                    {% if article.is_video %}
+                                        <span class="badge bg-danger ms-2">
+                                            <i class="fas fa-play me-1"></i>Video
+                                        </span>
+                                    {% endif %}
+                                    <small class="text-muted">{{ article.pub_date_str }}</small>
+                                </div>
+                                <h6 class="card-title">
+                                    <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                        {{ article.title }}
+                                    </a>
+                                </h6>
+                                <p class="card-text text-muted small">{{ article.summary }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-newspaper text-muted" style="font-size: 4rem;"></i>
+            <h3 class="text-muted mt-3">No articles available</h3>
+            <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
+        {% endif %}
+
+        <div id="article-viewer" class="article-viewer d-none">
+            <div class="article-viewer-header">
+                <button class="btn btn-sm btn-secondary" onclick="hideArticleViewer()">
+                    <i class="fas fa-arrow-left"></i> Back to News
+                </button>
+                <h5 class="article-viewer-title"></h5>
+            </div>
+            <div class="article-viewer-content">
+                <iframe src="" frameborder="0" class="article-iframe"></iframe>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container text-center">
+            <p class="mb-2">
+                <i class="fas fa-newspaper me-2"></i>
+                NewsHub - Your trusted source for global news
+            </p>
+            <small>
+                Sources: Al Jazeera, BBC World, The Kathmandu Post | 
+                Last updated: {{ last_update }}
+            </small>
+            <small class="d-block mt-2">Page fetched: {{ last_fetch_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+   <script>
+    // Dark Mode Toggle Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize dark mode if previously set
+        const savedMode = localStorage.getItem('darkMode');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        
+        if (savedMode === 'enabled') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        }
+        
+        // Set up dark mode toggle event
+        darkModeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', null);
+            }
+        });
+
+        // Initialize the first section as active
+        showSection(null, 'highlights');
+    });
+
+    // Show/Hide Sections
+    function showSection(event, sectionId) {
+        if (event) event.preventDefault();
+        
+        // Hide all content sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.add('d-none');
+        });
+        
+        // Remove active class from all nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Show the selected section
+        document.getElementById(sectionId + '-section').classList.remove('d-none');
+        
+        // Add active class to the clicked nav link
+        if (event) {
+            event.target.classList.add('active');
+            
+            // Also update the category tabs if clicked from main nav
+            const categoryTabs = document.querySelectorAll('.category-tabs .nav-link');
+            categoryTabs.forEach(tab => {
+                if (tab.textContent.trim().toLowerCase() === sectionId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+        }
+    }
+
+    // Filter by Source
+    function filterBySource() {
+        const sourceFilter = document.getElementById('sourceFilter').value;
+        const articles = document.querySelectorAll('.article-item');
+        
+        articles.forEach(article => {
+            if (sourceFilter === 'all' || article.dataset.source === sourceFilter) {
+                article.classList.remove('d-none');
+            } else {
+                article.classList.add('d-none');
+            }
+        });
+    }
+
+    // Search/Filter News
+    function filterNews() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const articles = document.querySelectorAll('.article-item, .featured-card');
+        
+        articles.forEach(article => {
+            const title = article.querySelector('.article-title, .featured-title').textContent.toLowerCase();
+            const summary = article.querySelector('.card-text').textContent.toLowerCase();
+            
+            if (title.includes(searchTerm) || summary.includes(searchTerm)) {
+                article.classList.remove('d-none');
+            } else {
+                article.classList.add('d-none');
+            }
+        });
+    }
+
+    // Article Viewer Functions
+    function showArticleViewer(url, title) {
+        document.getElementById('article-viewer').classList.remove('d-none');
+        document.querySelector('.article-viewer-title').textContent = title;
+        document.querySelector('.article-iframe').src = url;
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    function hideArticleViewer() {
+        document.getElementById('article-viewer').classList.add('d-none');
+        document.querySelector('.article-iframe').src = '';
+        document.body.style.overflow = ''; // Re-enable scrolling
+    }
+
+    // Add event listeners to article links to use the viewer
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click event to article links
+        document.querySelectorAll('.article-title, .featured-title a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                showArticleViewer(this.href, this.textContent);
+            });
+        });
+        
+        // Make search work on Enter key
+        document.getElementById('searchInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                filterNews();
+            }
+        });
+    });
+</script>
+</body>
+</html>

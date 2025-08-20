@@ -2,12 +2,14 @@ from flask import Flask, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
 import feedparser
 from datetime import datetime
+from youtubesearchpython import VideosSearch
 
 app = Flask(__name__)
 
 # Global variables
 all_articles = []
 interesting_articles = []
+all_videos = []
 last_update = None
 
 # Trusted news sources
@@ -21,6 +23,9 @@ NEWS_FEEDS = {
 
 # Keywords to filter interesting/educational/fun content
 KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation"]
+
+# YouTube search topics
+VIDEO_TOPICS = ["educational news", "fun science", "technology explained", "history documentary"]
 
 
 def is_interesting(article):
@@ -52,13 +57,35 @@ def fetch_news():
     print(f"News updated at {last_update}")
 
 
+def fetch_videos():
+    global all_videos
+    all_videos = []
+
+    for topic in VIDEO_TOPICS:
+        search = VideosSearch(topic, limit=3)
+        results = search.result()["result"]
+        for result in results:
+            video = {
+                "title": result["title"],
+                "link": result["link"],
+                "channel": result["channel"]["name"],
+                "pub_date_str": result.get("publishedTime", "")
+            }
+            all_videos.append(video)
+
+
+def update_all():
+    fetch_news()
+    fetch_videos()
+
+
 # Schedule automatic updates every 6 hours
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=fetch_news, trigger="interval", hours=6)
+scheduler.add_job(func=update_all, trigger="interval", hours=6)
 scheduler.start()
 
 # Initial fetch
-fetch_news()
+update_all()
 
 
 @app.route('/')
@@ -68,6 +95,7 @@ def index():
         "index.html",
         interesting_articles=interesting_articles,
         total_articles=len(interesting_articles),
+        all_videos=all_videos,
         error=error,
         last_update=last_update
     )

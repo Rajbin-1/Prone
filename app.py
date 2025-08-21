@@ -9,58 +9,47 @@ app = Flask(__name__)
 # Global variables
 all_articles = []
 interesting_articles = []
+nepal_articles = []
 all_videos = []
 last_update = None
 
-# Trusted news sources
+# Trusted news sources (priority to non-NYT)
 NEWS_FEEDS = {
-    "NYT Education": "https://rss.nytimes.com/services/xml/rss/nyt/Education.xml",
-    "NYT Science": "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
+    "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+    "BBC World": "http://feeds.bbci.co.uk/news/world/rss.xml",
     "Kantipur": "https://ekantipur.com/feed/",
     "Kathmandu Post": "https://kathmandupost.com/feed/",
     "The Himalayan Times": "https://thehimalayantimes.com/feed/",
-    "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    "BBC World": "http://feeds.bbci.co.uk/news/world/rss.xml"
+    "NYT Education": "https://rss.nytimes.com/services/xml/rss/nyt/Education.xml",
+    "NYT Science": "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml"
 }
 
 # Keywords to filter interesting/educational/fun content
-KEYWORDS = [
-    "education", "science", "learning", "technology", "fun",
-    "innovation", "Nepal", "War", "health", "dead", "strict"
-]
+KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation", "nepal", "war", "health", "dead", "strict"]
+
+# Nepal-specific keywords
+NEPAL_KEYWORDS = ["nepal", "kathmandu", "pokhara", "lumbini", "everest"]
 
 # YouTube search topics
-VIDEO_TOPICS = [
-    "educational news", "fun science", "technology explained",
-    "history documentary", "Nepal current affairs"
-]
+VIDEO_TOPICS = ["educational news", "fun science", "technology explained", "history documentary"]
 
 def is_interesting(article):
     text = (article["title"] + " " + article.get("summary", "")).lower()
-    return any(kw.lower() in text for kw in KEYWORDS)
+    return any(kw in text for kw in KEYWORDS)
+
+def is_nepal_related(article):
+    text = (article["title"] + " " + article.get("summary", "")).lower()
+    return any(kw in text for kw in NEPAL_KEYWORDS)
 
 def fetch_news():
-    global all_articles, interesting_articles, last_update
-    all_articles = []
-    interesting_articles = []
-
-    # Article limits per source (NYT less prominent)
-    SOURCE_LIMITS = {
-        "NYT Education": 3,
-        "NYT Science": 3,
-        "Kantipur": 6,
-        "Kathmandu Post": 6,
-        "The Himalayan Times": 5,
-        "Al Jazeera": 6,
-        "BBC World": 6
-    }
+    global all_articles, interesting_articles, nepal_articles, last_update
+    all_articles, interesting_articles, nepal_articles = [], [], []
 
     for source, url in NEWS_FEEDS.items():
         feed = feedparser.parse(url)
-        print(f"Fetching from: {source}, found {len(feed.entries)} entries")
 
-        limit = SOURCE_LIMITS.get(source, 5)
-        added_any = False
+        # Limit per source (NYT smaller, others bigger)
+        limit = 3 if "NYT" in source else 6
 
         for entry in feed.entries[:limit]:
             article = {
@@ -72,14 +61,10 @@ def fetch_news():
             }
             all_articles.append(article)
 
-            # Check if article is interesting
             if is_interesting(article):
                 interesting_articles.append(article)
-                added_any = True
-
-        # Fallback: If no article matched, add the first one anyway
-        if not added_any and feed.entries:
-            interesting_articles.append(all_articles[-1])
+            if is_nepal_related(article):
+                nepal_articles.append(article)
 
     last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"News updated at {last_update}")
@@ -87,41 +72,40 @@ def fetch_news():
 def fetch_videos():
     global all_videos
     all_videos = []
-    max_videos = 10
 
     for topic in VIDEO_TOPICS:
-        if len(all_videos) >= max_videos:
-            break  # Stop when we reach 10 videos
+        found_count = 0
+        page = 1
 
-        ydl_opts = {
-            'quiet': True,
-            'extract_flat': True,
-            'force_json': True,
-            'default_search': 'ytsearch15',  # Search up to 15 results per topic
-        }
-
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                result = ydl.extract_info(topic, download=False)
-                if 'entries' in result:
-                    for video in result['entries']:
-                        if len(all_videos) >= max_videos:
-                            break
-                        video_info = {
-                            "title": video.get('title', 'No title'),
-                            "link": video.get('url', '#'),
-                            "channel": video.get('uploader', 'Unknown channel'),
-                            "pub_date_str": (
-                                f"{video.get('upload_date', '')[:4]}-"
-                                f"{video.get('upload_date', '')[4:6]}-"
-                                f"{video.get('upload_date', '')[6:8]}"
-                                if video.get('upload_date') else 'Unknown date'
-                            )
-                        }
-                        all_videos.append(video_info)
-        except Exception as e:
-            print(f"Error fetching videos for topic '{topic}': {e}")
-            continue
+        while found_count < 10:  # keep searching until 10 videos found
+            ydl_opts = {
+                'quiet': True,
+                'extract_flat': True,
+                'force_json': True,
+                'default_search': f'ytsearch{10*page}',
+            }
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    result = ydl.extract_info(topic, download=False)
+                    if 'entries' in result:
+                        for video in result['entries']:
+                            if found_count >= 10:
+                                break
+                            video_info = {
+                                "title": video.get('title', 'No title'),
+                                "link": video.get('url', '#'),
+                                "channel": video.get('uploader', 'Unknown channel'),
+                                "pub_date_str": (
+                                    video.get('upload_date', '')[:4] + '-' + video.get('upload_date', '')[4:6] + '-' + video.get('upload_date', '')[6:8]
+                                    if video.get('upload_date') else 'Unknown date'
+                                )
+                            }
+                            all_videos.append(video_info)
+                            found_count += 1
+            except Exception as e:
+                print(f"Error fetching videos for topic '{topic}': {e}")
+                break
+            page += 1
 
 def update_all():
     fetch_news()
@@ -141,6 +125,7 @@ def index():
     return render_template(
         "index.html",
         interesting_articles=interesting_articles,
+        nepal_articles=nepal_articles,
         total_articles=len(interesting_articles),
         all_videos=all_videos,
         error=error,

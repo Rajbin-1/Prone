@@ -82,7 +82,7 @@ NEPAL_KEYWORDS = [
 ]
 
 # YouTube topics; the fetch will collect across these until it has max_videos
-VIDEO_TOPICS_GLOBAL = [
+VIDEO_TOPICS = [
     "educational news",
     "fun science experiments",
     "technology explained",
@@ -319,5 +319,6 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # default 5000 locally
     app.run(host="0.0.0.0", port=port)
+
 
 

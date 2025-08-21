@@ -41,19 +41,65 @@ SOURCE_LIMITS = {
 
 # Keywords to mark an article "interesting"
 KEYWORDS = [
-    "education", "science", "learning", "technology",
-    "fun", "innovation", "nepal", "war", "health",
-    "strict", "research", "study", "school", "university"
+    # Education & Learning
+    "education", "learning", "school", "university", "research", "study", "teaching", "curriculum",
+    
+    # Science & Technology
+    "science", "technology", "innovation", "experiment", "discovery", "physics", "chemistry", "biology",
+    "mathematics", "space", "astronomy", "robotics", "AI", "artificial intelligence", "engineering",
+    "computer", "software", "hardware", "programming", "coding", "quantum", "nanotechnology",
+    
+    # Environment & Nature
+    "environment", "climate", "sustainability", "conservation", "wildlife", "nature", "ecosystem",
+    "ocean", "forest", "pollution", "green energy", "renewable", "earthquake", "volcano", "disaster",
+    
+    # Health & Medicine
+    "health", "medicine", "disease", "wellness", "nutrition", "vaccine", "epidemic", "pandemic",
+    
+    # Society & Culture
+    "culture", "society", "history", "civilization", "innovation", "arts", "music", "festival", 
+    "tradition", "heritage", "archaeology",
+    
+    # Economy & Business
+    "economy", "business", "finance", "startup", "market", "trade", "industry", "investment",
+    
+    # Fun / Interesting / Curiosity
+    "fun", "curiosity", "amazing", "fact", "invention", "cool", "trick", "hack", "record", "achievement"
 ]
+
 
 # Nepal-related keywords (used for the Nepal section)
-NEPAL_KEYWORDS = ["nepal", "kathmandu", "pokhara", "lumbini", "everest", "nepali", "bagmati"]
+NEPAL_KEYWORDS = [
+    "nepal", "kathmandu", "pokhara", "lumbini", "everest", "nepali", "bagmati",
+    "himalaya", "mountain", "gorkha", "bhaktapur", "patan", "chitwan", "janakpur",
+    "terai", "hills", "constitution", "parliament", "politics", "government",
+    "election", "democracy", "protest", "strike", "economy", "trade", "tourism",
+    "culture", "festival", "dashain", "tihar", "holi", "religion", "buddhism",
+    "hinduism", "monsoon", "earthquake", "flood", "landslide", "disaster",
+    "education", "health", "hospital", "research", "school", "university",
+    "technology", "innovation", "transport", "road", "airports", "infrastructure",
+    "environment", "pollution", "climate", "wildlife", "conservation"
+]
 
 # YouTube topics; the fetch will collect across these until it has max_videos
-VIDEO_TOPICS = [
-    "educational news", "fun science", "technology explained",
-    "history documentary", "Nepal current affairs"
+VIDEO_TOPICS_GLOBAL = [
+    "educational news",
+    "fun science experiments",
+    "technology explained",
+    "history documentary",
+    "space exploration",
+    "physics explained",
+    "chemistry experiments",
+    "biology discoveries",
+    "environmental science",
+    "innovations in technology",
+    "mathematics tricks",
+    "engineering marvels",
+    "scientific breakthroughs",
+    "artificial intelligence explained",
+    "robotics projects"
 ]
+
 VIDEOS_MAX = 10  # how many videos you want overall
 
 def normalize_text(s):
@@ -273,3 +319,4 @@ def index():
 if __name__ == "__main__":
     # For production use a proper WSGI server; debug True is useful during development
     app.run(debug=True, host="0.0.0.0", port=5000)
+

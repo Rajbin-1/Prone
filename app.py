@@ -18,27 +18,51 @@ NEWS_FEEDS = {
     "NYT Science": "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
     "Kantipur": "https://ekantipur.com/feed/",
     "Kathmandu Post": "https://kathmandupost.com/feed/",
-    "The Himalayan Times": "https://thehimalayantimes.com/feed/"
+    "The Himalayan Times": "https://thehimalayantimes.com/feed/",
+    "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+    "BBC World": "http://feeds.bbci.co.uk/news/world/rss.xml"
 }
 
 # Keywords to filter interesting/educational/fun content
-KEYWORDS = ["education", "science", "learning", "technology", "fun", "innovation","Nepal","War","health","dead","strict"]
+KEYWORDS = [
+    "education", "science", "learning", "technology", "fun",
+    "innovation", "Nepal", "War", "health", "dead", "strict"
+]
 
 # YouTube search topics
-VIDEO_TOPICS = ["educational news", "fun science", "technology explained", "history documentary"]
+VIDEO_TOPICS = [
+    "educational news", "fun science", "technology explained",
+    "history documentary", "Nepal current affairs"
+]
 
 def is_interesting(article):
     text = (article["title"] + " " + article.get("summary", "")).lower()
-    return any(kw in text for kw in KEYWORDS)
+    return any(kw.lower() in text for kw in KEYWORDS)
 
 def fetch_news():
     global all_articles, interesting_articles, last_update
     all_articles = []
     interesting_articles = []
 
+    # Article limits per source (NYT less prominent)
+    SOURCE_LIMITS = {
+        "NYT Education": 3,
+        "NYT Science": 3,
+        "Kantipur": 6,
+        "Kathmandu Post": 6,
+        "The Himalayan Times": 5,
+        "Al Jazeera": 6,
+        "BBC World": 6
+    }
+
     for source, url in NEWS_FEEDS.items():
         feed = feedparser.parse(url)
-        for entry in feed.entries[:20]:  # up to 10 per source
+        print(f"Fetching from: {source}, found {len(feed.entries)} entries")
+
+        limit = SOURCE_LIMITS.get(source, 5)
+        added_any = False
+
+        for entry in feed.entries[:limit]:
             article = {
                 "title": entry.title,
                 "link": entry.link,
@@ -48,8 +72,14 @@ def fetch_news():
             }
             all_articles.append(article)
 
+            # Check if article is interesting
             if is_interesting(article):
                 interesting_articles.append(article)
+                added_any = True
+
+        # Fallback: If no article matched, add the first one anyway
+        if not added_any and feed.entries:
+            interesting_articles.append(all_articles[-1])
 
     last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"News updated at {last_update}")
@@ -57,25 +87,36 @@ def fetch_news():
 def fetch_videos():
     global all_videos
     all_videos = []
+    max_videos = 10
 
     for topic in VIDEO_TOPICS:
+        if len(all_videos) >= max_videos:
+            break  # Stop when we reach 10 videos
+
         ydl_opts = {
             'quiet': True,
             'extract_flat': True,
             'force_json': True,
-            'default_search': 'ytsearch5',
+            'default_search': 'ytsearch15',  # Search up to 15 results per topic
         }
-        
+
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 result = ydl.extract_info(topic, download=False)
                 if 'entries' in result:
-                    for video in result['entries'][:10]:  # Get first 3 results
+                    for video in result['entries']:
+                        if len(all_videos) >= max_videos:
+                            break
                         video_info = {
                             "title": video.get('title', 'No title'),
                             "link": video.get('url', '#'),
                             "channel": video.get('uploader', 'Unknown channel'),
-                            "pub_date_str": video.get('upload_date', '')[:4] + '-' + video.get('upload_date', '')[4:6] + '-' + video.get('upload_date', '')[6:8] if video.get('upload_date') else 'Unknown date'
+                            "pub_date_str": (
+                                f"{video.get('upload_date', '')[:4]}-"
+                                f"{video.get('upload_date', '')[4:6]}-"
+                                f"{video.get('upload_date', '')[6:8]}"
+                                if video.get('upload_date') else 'Unknown date'
+                            )
                         }
                         all_videos.append(video_info)
         except Exception as e:
@@ -111,5 +152,3 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-

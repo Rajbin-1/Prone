@@ -235,7 +235,6 @@
                 {% endfor %}
             </div>
         </section>
-
         <!-- Nepal News Section -->
         <section id="nepal-section" class="content-section d-none">
             <h2 class="section-title">
@@ -243,36 +242,39 @@
                 Nepal News
             </h2>
             <div class="row g-4">
-                {% for article in interesting_articles %}
-                    {% if article.source in ['Kantipur', 'Kathmandu Post', 'The Himalayan Times'] %}
-                    <div class="col-lg-6 col-md-12 article-item" data-source="{{ article.source|lower|replace(' ', '-') }}" data-keywords="{{ KEYWORDS|join(',') }}">
-                        <div class="card article-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge source-badge-{{ article.source|lower|replace(' ', '-') }}">{{ article.source }}</span>
-                                    <small class="text-muted">{{ article.pub_date_str }}</small>
-                                </div>
-                                <h6 class="card-title">
-                                    <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
-                                        {{ article.title }}
-                                    </a>
-                                </h6>
-                                <p class="card-text text-muted small">{{ article.summary[:120] }}...</p>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                        Read More
-                                    </a>
-                                    <span class="reading-time">
-                                        <i class="far fa-clock me-1"></i>4 min read
-                                    </span>
-                                </div>
+                {% for article in nepal_articles %}
+                <div class="col-lg-6 col-md-12 article-item"
+                     data-source="{{ article.source|lower|replace(' ', '-') }}"
+                     data-keywords="{{ KEYWORDS|join(',') }}">
+                    <div class="card article-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge source-badge-{{ article.source|lower|replace(' ', '-') }}">
+                                    {{ article.source }}
+                                </span>
+                                <small class="text-muted">{{ article.pub_date_str }}</small>
+                            </div>
+                            <h6 class="card-title">
+                                <a href="{{ article.link }}" target="_blank" class="text-decoration-none article-title">
+                                    {{ article.title }}
+                                </a>
+                            </h6>
+                            <p class="card-text text-muted small">{{ article.summary[:120] }}...</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <a href="{{ article.link }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                    Read More
+                                </a>
+                                <span class="reading-time">
+                                    <i class="far fa-clock me-1"></i>4 min read
+                                </span>
                             </div>
                         </div>
                     </div>
-                    {% endif %}
+                </div>
                 {% endfor %}
             </div>
         </section>
+
 
         <!-- Videos Section -->
         <section id="videos-section" class="content-section d-none">
@@ -586,3 +588,4 @@
     </script>
 </body>
 </html>
+
